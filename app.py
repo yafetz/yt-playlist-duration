@@ -8,21 +8,10 @@ import json
 import datetime
 import isodate
 
-api_key = "AIzaSyBUHvrNVYtnt16t2ALRzAM__jWC566nSIA"
 
+api_key = os.environ['APIS'].strip('][').split(',')
 
-#api_key = os.environ.get('YT_API_KEY')
-
-def get_id(playlist_link):
-    p = re.compile('^([\S]+list=)?([\w_-]+)[\S]*$')
-    m = p.match(playlist_link)
-    if m:
-        return m.group(2)
-    else:
-        return 'invalid_playlist_link'
-
-
-
+# get the playlistid from the link
 def get_id(playlist_link):
     p = re.compile('^([\S]+list=)?([\w_-]+)[\S]*$')
     m = p.match(playlist_link)
@@ -34,8 +23,7 @@ def get_id(playlist_link):
 
 
 
-app = Flask(__name__, static_url_path='/static')
-
+app = Flask(__name__)
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -46,19 +34,16 @@ def home():
     else:
         playlist_link = request.form.get('search_string').strip()
         playlist_id = get_id(playlist_link)
-        test= ''.join(playlist_id)
-        #return render_template("home.html", display_text=test)
-
+        test = ''.join(playlist_id)
+        
 
         youtube = build('youtube', 'v3', developerKey=api_key)
-
 
         hours_pattern = re.compile(r'(\d+)H')
         minutes_pattern = re.compile(r'(\d+)M')
         seconds_pattern = re.compile(r'(\d+)S')
 
         total_seconds = 0
-
 
         nextPageToken = None
         while True:
@@ -70,18 +55,16 @@ def home():
             )
 
             pl_response = pl_request.execute()
-            
+
             vid_ids = []
             for item in pl_response['items']:
                 vid_ids.append(item['contentDetails']['videoId'])
-                
 
             vid_request = youtube.videos().list(
                 part="contentDetails",
                 id=','.join(vid_ids)
             )
 
-            
             vid_response = vid_request.execute()
 
             for item in vid_response['items']:
@@ -111,19 +94,18 @@ def home():
         total_seconds = int(total_seconds)
 
         time = str(datetime.timedelta(seconds=total_seconds))
-        
 
         minutes, seconds = divmod(total_seconds, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
-        display_text ='Total length of videos: ' + time
+        display_text = 'Total length of videos: ' + time
 
         return render_template("home.html", display_text=display_text)
 
 
 @app.errorhandler(500)
 def internal_error(error):
-    display_text='Invalid link'
+    display_text = 'Invalid link'
     return render_template("home.html", display_text=display_text)
 
 
@@ -131,6 +113,7 @@ def internal_error(error):
 def not_found(error):
     display_text = 'Invalid link'
     return render_template("home.html", display_text=display_text)
+
 
 if __name__ == "__main__":
     app.run(use_reloader=True, debug=False)
