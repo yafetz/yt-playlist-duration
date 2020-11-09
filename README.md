@@ -1,1 +1,1 @@
-A small web app to get the lengths of playlists on YouTube. 
+A small web app to get the duration of playlists on YouTube. 
